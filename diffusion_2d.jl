@@ -1,15 +1,25 @@
 using PyPlot
 
 #parameters
-XSIZE = 100 + 2
-YSIZE = 100 + 2
+XSIZE = 50 + 2
+YSIZE = 50 + 2
 TSIZE = 1000 
-Lx = 100.0
-Ly = 100.0
-dx = Lx/(XSIZE-2)
+dx = 0.5e-6
 dy = dx
-D = 1
-dt = 0.1
+gamma = 1.0
+delta = 4*dx
+M = 4.0e-14
+rambda = 0.1
+b = log((1-rambda)/rambda)
+
+a = sqrt(3*delta*gamma/b)
+W = 6*gamma*b/delta
+Mp = b*M/(3*delta)
+beta = 0.5
+
+dt = dx^2/(5*Mp*a^2)
+
+D = Mp*a^2
 println("dt = ", dt, ", 1/(2D(1/dx^2 + 1/dy^2)) = ", 1/(2*D*(1/(dx^2) + 1/(dy^2))))
 
 
