@@ -12,17 +12,20 @@ M = 4.0e-14
 rambda = 0.1
 b = log((1-rambda)/rambda)
 
-a = sqrt(3*delta*gamma/b)*10
+a = sqrt(3*delta*gamma/b)
 W = 6*gamma*b/delta
 Mp = b*M/(3*delta)
 beta = 0.5
 
 dt = dx^2/(5*Mp*a^2)
+D = Mp*a^2
 println("a^2 = ", a^2)
 println("b = ", b)
 println("W = ", W)
 println("Mp = ", Mp)
 println("dt = ", dt, "[s]")
+
+println("dt = ", dt, ", 1/(2D(1/dx^2 + 1/dy^2)) = ", 1/(2*D*(1/(dx^2) + 1/(dy^2))))
 
 #initialization
 r0 = dx*XSIZE/2;
@@ -46,23 +49,9 @@ Ax[1:3, 1] = [1.0; -2.0; 1.0]
 Ax[end-2:end, end] = [1.0; -2.0; 1.0]
 #time development
 for t in 2:TSIZE
-    phi[:,:,t] = phi[:,:,t-1]  
-    .+ dt .*Mp .*(4.0 .*W .*phi[:,:,t-1] .*(1 .-phi[:,:,t-1]) .*(phi[:,:,t-1] .-0.5 .+ beta) 
-               .+ ((a ./dy) .^2) .* Ay * phi[:,:,t-1] 
-               .+ ((a ./dx) .^2) .* phi[:,:,t-1] * Ax)
+    phi[:,:,t] = phi[:,:,t-1] .+ dt .*Mp .*(4.0 .*W .*phi[:,:,t-1] .*(1 .-phi[:,:,t-1]) .*(phi[:,:,t-1] .-0.5 .+ beta) .+ ((a ./dy) .^2) .* Ay * phi[:,:,t-1] .+ ((a ./dx) .^2) .* phi[:,:,t-1] * Ax)
 end
 
-#=
-println("Ax = ")
-for i in 1:XSIZE
-    println(Ax[i, :])
-end
-println("")
-println("Ay = ")
-for i in 1:YSIZE
-    println(Ay[i, :])
-end
-=#
 
 imshow(phi[:,:,1])
 show()
