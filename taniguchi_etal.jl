@@ -1,14 +1,16 @@
+using PyCall
+@pyimport matplotlib.animation as animation
 using PyPlot
 
 #parameters
-XSIZE = 1000 + 2
-YSIZE = 1000 + 2
+XSIZE = 100 + 2
+YSIZE = 100 + 2
 TSIZE = 1000 
-dx = 0.1
+dx = 0.5
 dy = dx
 Du = 0.05
 Dv = 0.20
-dt = 8.0e-5
+dt = 0.01
 
 S = 1.0
 tau = 0.83
@@ -30,7 +32,7 @@ Xv = 50.0
 a = 10.0
 b = 3.0e-2
 
-println("dt = ", dt, ", 1/(2Du(1/dx^2 + 1/dy^2)) = ", 1/(2*D*(1/(dx^2) + 1/(dy^2))))
+println("dt = ", dt, ", 1/(2Du(1/dx^2 + 1/dy^2)) = ", 1/(2*Du*(1/(dx^2) + 1/(dy^2))))
 
 
 #initialization
@@ -39,9 +41,9 @@ U = zeros(Float64, YSIZE, XSIZE, TSIZE);
 V = zeros(Float64, YSIZE, XSIZE, TSIZE);
 for i in 1:YSIZE
     for j in 1:XSIZE
-        if sqrt((i-YSIZE/2)^2 + (j-XSIZE/2)^2) <= 2*pi*R/dx
+        if sqrt((i-YSIZE/2)^2 + (j-XSIZE/2)^2) <= R/dx
             phi[i, j, 1] = 1.0
-            U[i,j,1] = 1.0
+            V[i,j,1] = 1.0
             U[i,j,1] = 6.0
 
         end
@@ -83,13 +85,16 @@ Ax[end-1:end, end] = [-2.0; 1.0]; Ax[1, end] = 1.0;
 By[1, 1] = 1.0; By[1, end] = -1.0
 Bx[1, 1] = 1.0; Bx[end, 1] = -1.0
 
+println("start calculation")
 #time development
 for t in 2:TSIZE
     A = sum(phi[:,:,t-1].*dx.*dy)
 
-    abs_nabra_phi = sqrt(((1./dx) .* phi[:,:,t-1] *Bx).^2 .+ ((1./dy) .* By *phi[:,:,t-1]).^2)
+    abs_nabra_phi = sqrt.(((1.0 ./dx) .* phi[:,:,t-1] *Bx).^2 .+ ((1.0 ./dy) .* By *phi[:,:,t-1]).^2)
 
-    next_phi = phi[:,:,t-1] .+ dt./tau.*(eta.*((1 ./dy) .^2 .* Ay * phi[:,:,t-1] .+ (1 ./dx) .^2 .* phi[:,:,t-1] * Ax .- 18.0.*phi[:,:,t-1].^2.*(1-phi[:,:,t-1]).^2) .-M.*(A .- A0).*abs_nabra_phi .+ (a.*V[:,:,t-1] - b.*U[:,:,t-1]).*abs_nabra_phi)
+    del_phi = (eta.*((1.0 ./dy) .^2.0 .* Ay * phi[:,:,t-1] .+ (1.0 ./dx) .^2.0 .* phi[:,:,t-1] * Ax .- 18.0.*phi[:,:,t-1].^2.0 .*(1.0 .- phi[:,:,t-1]).^2.0 ) .-M.*(A .- A0).*abs_nabra_phi .+ (a.*V[:,:,t-1] .- b.*U[:,:,t-1]).*abs_nabra_phi)./tau
+
+    phi[:,:,t] = phi[:,:,t-1] .+ dt.*del_phi
 
     reaction_common = -alpha.*U[:,:,t-1].*V[:,:,t-1].^2 ./(Kk + sum(phi[:,:,t-1].*V[:,:,t-1].^2 .*dx.*dy)./A) .+beta.*U[:,:,t-1].*V[:,:,t-1]./(Kp.+sum(phi[:,:,t-1].*U[:,:,t-1].*dx.*dy)./A) 
 
@@ -97,10 +102,35 @@ for t in 2:TSIZE
 
     reaction_V = phi[:,:,t-1].*(-reaction_common .-mu.*V[:,:,t-1]).-Xv.*V[:,:,t-1].*abs_nabra_phi.^2 ./(sum(dx.*dy.*abs_nabra_phi.^2))
 
-    U[:,:,t] = U[:,:,t-1].+ dt .* Du.*(phi[:,:,t-1] .*((1 ./dy) .^2 .* Ay * U[:,:,t-1] .+ (1 ./dx) .^2 .* U[:,:,t-1] * Ax) .+ ((1./dx) .* phi[:,:,t-1] *Bx .+ (1./dy) .* By *phi[:,:,t-1]) .*((1./dx) .* U[:,:,t-1] *Bx .+ (1./dy) .* By *U[:,:,t-1])) + reaction_U
+    U[:,:,t] = U[:,:,t-1].+ dt .*(Du.*(phi[:,:,t-1] .*((1.0 ./dy) .^2 .* Ay * U[:,:,t-1] .+ (1.0 ./dx) .^2 .* U[:,:,t-1] * Ax) .+ ((1.0 ./dx) .* phi[:,:,t-1] *Bx .+ (1.0 ./dy) .* By *phi[:,:,t-1]) .*((1.0 ./dx) .* U[:,:,t-1] *Bx .+ (1.0 ./dy) .* By *U[:,:,t-1])) .+ reaction_U .- del_phi)
 
-    next_phiV = V[:,:,t-1].+ dt .* Dv.*(phi[:,:,t-1] .*((1 ./dy) .^2 .* ay * V[:,:,t-1] .+ (1 ./dx) .^2 .* V[:,:,t-1] * ax) .+ ((1./dx) .* phi[:,:,t-1] *bx .+ (1./dy) .* by *phi[:,:,t-1]) .*((1./dx) .* V[:,:,t-1] *bx .+ (1./dy) .* by *V[:,:,t-1])) + reaction_V
+    V[:,:,t] = V[:,:,t-1].+ dt .*(Dv.*(phi[:,:,t-1] .*((1.0 ./dy) .^2 .* Ay * V[:,:,t-1] .+ (1.0 ./dx) .^2 .* V[:,:,t-1] * Ax) .+ ((1.0 ./dx) .* phi[:,:,t-1] *Bx .+ (1.0 ./dy) .* By *phi[:,:,t-1]) .*((1.0 ./dx) .* V[:,:,t-1] *Bx .+ (1.0 ./dy) .* By *V[:,:,t-1])) .+ reaction_V .- del_phi)
+end
+println("end calculation")
+
+#make the movies
+ims_phi = []
+ims_U = []
+ims_V = []
+
+fig = figure()
+for i=1:TSIZE
+    #tmp_im = imshow(phi[:,:,i], animated=true)
+    #push!(ims_phi, PyCall.PyObject[tmp_im])
+    #tmp_im = imshow(U[:,:,i], animated=true)
+    #push!(ims_U, PyCall.PyObject[tmp_im])
+    tmp_im = imshow(V[:,:,i], animated=true)
+    push!(ims_V, PyCall.PyObject[tmp_im])
 end
 
-#imshow(phi[:, 51, :])
-show()
+
+#ani = animation.ArtistAnimation(fig, ims_phi, interval=100, blit=true, repeat_delay=1000)
+#ani[:save]("phi.mp4")
+
+#ani = animation.ArtistAnimation(fig, ims_U, interval=100, blit=true, repeat_delay=1000)
+#ani[:save]("U.mp4")
+
+ani = animation.ArtistAnimation(fig, ims_V, interval=100, blit=true, repeat_delay=1000)
+ani[:save]("V.mp4")
+
+println("finish")
