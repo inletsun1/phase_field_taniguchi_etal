@@ -1,4 +1,7 @@
+using PyCall
+@pyimport matplotlib.animation as animation
 using PyPlot
+
 
 #parameters
 XSIZE = 50 + 2
@@ -53,7 +56,13 @@ for t in 2:TSIZE
 end
 
 
-imshow(phi[:,:,1])
-show()
-imshow(phi[:,:,end])
-show()
+#save the simulation result as .mp4
+fig = figure()
+ims = []
+for i=1:TSIZE
+    tmp_im = imshow(phi[:,:,i], animated=true)
+    push!(ims, PyCall.PyObject[tmp_im])
+end
+
+ani = animation.ArtistAnimation(fig, ims, interval=100, blit=true, repeat_delay=10000)
+ani[:save]("phase_field.mp4")
