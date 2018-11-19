@@ -1,5 +1,6 @@
 using PyCall
 @pyimport matplotlib.animation as animation
+@pyimport matplotlib.pyplot as plt
 using PyPlot
 
 #parameters
@@ -92,7 +93,7 @@ for t in 2:TSIZE
 
     abs_nabra_phi = sqrt.(((1.0 ./dx) .* phi[:,:,t-1] *Bx).^2 .+ ((1.0 ./dy) .* By *phi[:,:,t-1]).^2)
 
-    del_phi = (eta.*((1.0 ./dy) .^2.0 .* Ay * phi[:,:,t-1] .+ (1.0 ./dx) .^2.0 .* phi[:,:,t-1] * Ax .- 18.0.*phi[:,:,t-1].^2.0 .*(1.0 .- phi[:,:,t-1]).^2.0 ) .-M.*(A .- A0).*abs_nabra_phi .+ (a.*V[:,:,t-1] .- b.*U[:,:,t-1]).*abs_nabra_phi)./tau
+    del_phi = (eta.*((1.0 ./dy) .^2.0 .* Ay * phi[:,:,t-1] .+ (1.0 ./dx) .^2.0 .* phi[:,:,t-1] * Ax .- 36.0.*phi[:,:,t-1] .*(1.0 .- phi[:,:,t-1])) .*(1.0 .- 2.0.*phi[:,:,t-1]) .-M.*(A .- A0).*abs_nabra_phi .+ (a.*V[:,:,t-1] .- b.*U[:,:,t-1]).*abs_nabra_phi)./tau
 
     phi[:,:,t] = phi[:,:,t-1] .+ dt.*del_phi
 
@@ -115,12 +116,12 @@ ims_V = []
 
 fig = figure()
 for i=1:TSIZE
-    #tmp_im = imshow(phi[:,:,i], animated=true)
-    #push!(ims_phi, PyCall.PyObject[tmp_im])
-    #tmp_im = imshow(U[:,:,i], animated=true)
+    #tmp_im = imshow(U[:,:,i], cmap="Greens", animated=true)
     #push!(ims_U, PyCall.PyObject[tmp_im])
-    tmp_im = imshow(V[:,:,i], animated=true)
+    tmp_im = imshow(V[:,:,i], cmap="Reds",  animated=true)
     push!(ims_V, PyCall.PyObject[tmp_im])
+    #tmp_im = imshow(phi[:,:,i], cmap="gray", animated=true)
+    #push!(ims_phi, PyCall.PyObject[tmp_im])
 end
 
 
