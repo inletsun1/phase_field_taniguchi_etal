@@ -51,13 +51,16 @@ function main()
         end
     end
     =#
-    phase_range = 0.1
-    k = log((1.0 - phase_range)/phase_range)/(2.0*R)
+    phase_range = 0.01
+    delta = dx*5
+    k = log((1.0 - phase_range)/phase_range)/delta
     x0 = XSIZE/2.0 * dx
     y0 = YSIZE/2.0 * dy
+    r0 = R + delta/2.0
     #Xmesh = [x*dx for _ in 0:YSIZE-1, x in 0:XSIZE-1]
     #Ymesh = [y*dy for y in 0:YSIZE-1, _ in 1:XSIZE-1]
-    rmesh = [k*sqrt((x*dx-x0)^2 + (y*dy-y0)^2) for y in 0:YSIZE-1, x in 0:XSIZE-1]
+    #rmesh = [k*sqrt((x*dx-x0)^2 + (y*dy-y0)^2) for y in 0:YSIZE-1, x in 0:XSIZE-1]
+    rmesh = [k*(sqrt((x*dx-x0)^2 + (y*dy-y0)^2)-r0) for y in 0:YSIZE-1, x in 0:XSIZE-1]
     phi[:,:,1] = (1.0 .- tanh.(rmesh))./2.0
     V[:,:,1] = (1.0 .- tanh.(rmesh))./2.0
     U[:,:,1] = 6.0.*(1.0 .- tanh.(rmesh))./2.0
@@ -80,11 +83,13 @@ function main()
     for i in 2:XSIZE-1
         Ax[i-1:i+1, i] = [1.0; -2.0; 1.0] 
     end
-    for i in 2:YSIZE
-        By[i, i-1:i] = [-1.0 1.0] 
+    for i in 2:YSIZE-1
+        #By[i, i-1:i] = [-1.0 1.0] 
+        By[i, i-1] = -1.0; By[i, i+1] = 1.0;
     end
-    for i in 2:XSIZE
-        Bx[i-1:i, i] = [-1.0; 1.0] 
+    for i in 2:XSIZE-1
+        #Bx[i-1:i, i] = [-1.0; 1.0] 
+        Bx[i-1, i] = -1.0; Bx[i+1, i] = 1.0;
     end
     #=
     #Dirichlet
@@ -101,15 +106,17 @@ function main()
     Ay[end, end-1:end] = [1.0 -2.0]; Ay[end, 1] = 1.0;
     Ax[1:2, 1] = [-2.0; 1.0]; Ax[end, 1] = 1.0;
     Ax[end-1:end, end] = [-2.0; 1.0]; Ax[1, end] = 1.0;
-    By[1, 1] = 1.0; By[1, end] = -1.0
-    Bx[1, 1] = 1.0; Bx[end, 1] = -1.0
+    #By[1, 1] = 1.0; By[1, end] = -1.0
+    #Bx[1, 1] = 1.0; Bx[end, 1] = -1.0
+    By[1,end] = -1.0; By[1,2] = 1.0; By[end, end-1] = -1.0; By[end, 1] = 1.0;
+    By[end, 1] = -1.0; By[2,1] = 1.0; By[end-1, end] = -1.0; By[1, end] = 1.0;
 
     println("start calculation")
     #time development
     for t in 2:TSIZE
         A = sum(phi[:,:,t-1].*dx.*dy)
 
-        abs_nabra_phi = sqrt.(((1.0 ./dx) .* phi[:,:,t-1] *Bx).^2 .+ ((1.0 ./dy) .* By *phi[:,:,t-1]).^2)
+        abs_nabra_phi = sqrt.(((1.0 ./(2.0.*dx)) .* phi[:,:,t-1] *Bx).^2 .+ ((1.0 ./(2.0.*dy)) .* By *phi[:,:,t-1]).^2)
 
         del_phi = (eta.*((1.0 ./dy) .^2.0 .* Ay * phi[:,:,t-1] .+ (1.0 ./dx) .^2.0 .* phi[:,:,t-1] * Ax .- 36.0.*phi[:,:,t-1] .*(1.0 .- phi[:,:,t-1])) .*(1.0 .- 2.0.*phi[:,:,t-1]) .-M.*(A .- A0).*abs_nabra_phi .+ (a.*V[:,:,t-1] .- b.*U[:,:,t-1]).*abs_nabra_phi)./tau
 
