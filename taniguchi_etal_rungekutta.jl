@@ -4,7 +4,7 @@ using JLD
 
 const XSIZE = 100
 const YSIZE = 100
-const TSIZE = 4000 
+const TSIZE = 40000 
 const dx = 0.2
 const dy = dx
 const Du = 0.05
