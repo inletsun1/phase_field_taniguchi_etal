@@ -1,19 +1,22 @@
 using PyCall
-@pyimport matplotlib.animation as animation
-using PyPlot
+matplotlib = pyimport("matplotlib")
+matplotlib.use("tkagg")
+animation = pyimport("matplotlib.animation")
+plt = pyimport("matplotlib.pyplot")
 
 
 A = randn(20,20,20)
 
-fig = figure()
+fig = plt.figure()
 ims = PyCall.PyObject([])
 for i in 1:20
-    tmp_im = imshow(A[:,:,i], animated=true)
+    tmp_im = plt.imshow(A[:,:,i], animated=true)
     push!(ims, PyCall.PyObject[tmp_im])
 end
 
+println("hoge")
 ani = animation.ArtistAnimation(fig, ims, interval=50, blit=true, repeat_delay=1000)
 
-ani[:save]("test.mp4")
+ani.save("test.mp4", writer="html")
 
 println("finished")
